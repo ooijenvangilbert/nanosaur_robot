@@ -32,9 +32,10 @@ mh = Adafruit_MotorHAT(i2c_bus=1)
 
 class Motor:
 
-    def __init__(self, channel_id, rpm, alpha=1.0, beta=0.0):
+    def __init__(self, channel_id, rpm, alpha=1.0, beta=0.0, inverted = False):
         self.alpha = alpha
         self.beta = beta
+        self.inverted = inverted
         # load motor channel
         self._motor = mh.getMotor(channel_id)
         self._rpm = rpm
@@ -45,9 +46,15 @@ class Motor:
         value = rpm / self._rpm
         mapped_value = int(255.0 * (self.alpha * value + self.beta))
         if mapped_value < 0:
-            self._motor.run(Adafruit_MotorHAT.BACKWARD)
+            if self.inverted:
+                self._motor.run(Adafruit_MotorHAT.FORWARD)
+            else:    
+                self._motor.run(Adafruit_MotorHAT.BACKWARD)
         else:
-            self._motor.run(Adafruit_MotorHAT.FORWARD)
+            if self.inverted:
+                self._motor.run(Adafruit_MotorHAT.BACKWARD)
+            else:
+                self._motor.run(Adafruit_MotorHAT.FORWARD)
         speed = min(max(abs(mapped_value), 0), 255)
         self._motor.setSpeed(speed)
 

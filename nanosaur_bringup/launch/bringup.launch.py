@@ -227,6 +227,8 @@ def generate_launch_description():
         ld.add_action(teleop_launch)
         # Run Joystick to system_manager node
         ld.add_action(teleop_extra_nodes_launch)
+    else:
+        print("No joystick found")
 
     return ld
 # EOF

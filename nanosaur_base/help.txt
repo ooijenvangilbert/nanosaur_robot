@@ -1,0 +1,18 @@
+development workflow :
+
+nanosaur down
+nanosaur install developer
+nanosaur run core
+
+this starts the docker container with the connection to the folder $Home/[user]nanosaur_core/src
+
+ros2 launch nanosaur_bringup bringup.launch.py
+-- starts the code from the connected folder
+
+when you are happy do the following to persist the changes to the docker container
+
+cd $HOME/[USER]/nanosaur_core/src/nanosaur
+
+docker build -f dockerfile-dev -t nanosaur/nanosaur:latest
+
+after this nanosaur reboots and all the code changes are in the docker

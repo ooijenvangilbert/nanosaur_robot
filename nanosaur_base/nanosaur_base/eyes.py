@@ -41,14 +41,14 @@ class eyes:
     def __init__(self, node):
         self.node = node
         # Initialize right display parameters
-        node.declare_parameter("display.right.enable", True)
+        node.declare_parameter("display.right.enable", True)        # TODO : verify if the display is there
         self.right_enable = bool(node.get_parameter("display.right.enable").value)
         node.declare_parameter("display.right.bus", 0)
         right_bus = int(node.get_parameter("display.right.bus").value)
         node.declare_parameter("display.right.address", 0x3C)
         right_address = int(node.get_parameter("display.right.address").value)
         # Initialize left display parameters
-        node.declare_parameter("display.left.enable", True)
+        node.declare_parameter("display.left.enable", True)         # TODO : verify if the display is there
         self.left_enable = bool(node.get_parameter("display.left.enable").value)
         node.declare_parameter("display.left.bus", 1)
         left_bus = int(node.get_parameter("display.left.bus").value)

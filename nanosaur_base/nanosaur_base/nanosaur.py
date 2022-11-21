@@ -37,6 +37,8 @@ from .motor import Motor
 from .display import Display
 from .eyes import eyes
 
+from .VelocityService import VelocityService
+
 
 def euclidean_of_vectors(xyz1, xyz2):
     return math.sqrt(
@@ -65,52 +67,59 @@ class NanoSaur(Node):
         super().__init__('nanosaur')
         # Initialize eyes controller
         self.eyes = eyes(self)
+
+        '''
         # Get rate joint_states
         self.declare_parameter("rate", 5)
         self.timer_period = 1. / float(self.get_parameter("rate").value)
         # Get RPM motors
         self.declare_parameter("rpm", 150)
         self.rpm = int(self.get_parameter("rpm").value)
+        
+        # INITIATE MOTORS
+        
         # Get parameter left wheel name
         # https://index.ros.org/doc/ros2/Tutorials/Using-Parameters-In-A-Class-Python/
         self.declare_parameter("motor.left.channel", 1)
         left_id = int(self.get_parameter("motor.left.channel").value)
         self.declare_parameter("motor.left.wheel", "sprocket_left_joint")
         self.left_wheel_name = self.get_parameter("motor.left.wheel").value
+        
         # Get parameter right wheel name
         self.declare_parameter("motor.right.channel", 4)
         right_id = int(self.get_parameter("motor.right.channel").value)
         self.declare_parameter("motor.right.wheel", "sprocket_right_joint")
         self.right_wheel_name = self.get_parameter("motor.right.wheel").value
+        
         # Motor info message
         self.get_logger().info(f"RPM motors {self.rpm} - timer {self.timer_period}")
         self.get_logger().info(f"Motor left: Channel {left_id} - Wheel {self.left_wheel_name}")
         self.get_logger().info(f"Motor Right: Channel {right_id} - Wheel {self.right_wheel_name}")
+        
         # Load motors
         self.mright = Motor(right_id, self.rpm)
         self.mleft = Motor(left_id, self.rpm)
+        
         # Load subscriber robot_description
-        self.create_subscription(
-            String, 'robot_description',
+        self.create_subscription(String, 'robot_description',
             lambda msg: self.configure_robot(msg.data),
             QoSProfile(depth=1, durability=rclpy.qos.QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL))
+        
         # joint state controller
         # https://index.ros.org/doc/ros2/Tutorials/URDF/Using-URDF-with-Robot-State-Publisher/
         self.joint_state = JointState()
         qos_profile = QoSProfile(depth=10)
         self.joint_pub = self.create_publisher(JointState, 'joint_states', qos_profile)
         self.timer = self.create_timer(self.timer_period, self.transform_callback)
+        
         # Drive control
         self.p = [0.0, 0.0] # [right, left]
         self.r = [0.0, 0.0] # [right, left]
-        self.subscription = self.create_subscription(
-            Twist,
-            'cmd_vel',
-            self.drive_callback,
-            10)
+        self.subscription = self.create_subscription(Twist,'cmd_vel', self.drive_callback, 10)
         self.subscription  # prevent unused variable warning
         # Node started
         self.get_logger().info("Hello NanoSaur!")
+        '''
 
     def configure_robot(self, description):
         self.get_logger().info('Got description, configuring robot')
@@ -186,8 +195,11 @@ def main(args=None):
     signal.signal(signal.SIGTERM, exit_signal)
     # Start Nanosaur
     nanosaur = NanoSaur()
+    service = VelocityService()
+
     try:
-        rclpy.spin(nanosaur)
+        rclpy.spin(service)
+        #rclpy.spin(nanosaur)
     except (KeyboardInterrupt, SystemExit):
         pass
     # Destroy the node explicitly
