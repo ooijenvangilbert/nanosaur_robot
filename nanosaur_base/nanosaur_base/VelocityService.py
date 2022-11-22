@@ -12,14 +12,13 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
+from urdf_parser_py.urdf import URDF
 
 class VelocityService(Node):
     def __init__(self):
         super().__init__('nanosaur')
         # Initialize eyes controller
         # self.eyes = eyes(self)
-        self.wheel_separation = 0.086
-        self.radius = 0.015
 
         self.mecanumOr4wd = True
         # Get rate joint_states
@@ -70,6 +69,10 @@ class VelocityService(Node):
         
             self.mright_front = Motor(right_front_id, self.rpm, inverted=True)
             self.mleft_front = Motor(left_front_id, self.rpm, inverted=True)
+        
+        self.create_subscription(String, 'robot_description',
+            lambda msg: self.configure_robot(msg.data),
+            QoSProfile(depth=1, durability=rclpy.qos.QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL))
                
         # Drive control
         self.p = [0.0, 0.0] # [right, left]
@@ -80,8 +83,6 @@ class VelocityService(Node):
         self.get_logger().info("Hello NanoSaur!")
 
     def drive_callback(self, msg):
-        #self.get_logger().info('cmd_vel recieved')
-        #self.get_logger().info(msg)
         # awake displays
         # self.eyes.ping()
         # todo : apply different calculation for mecanum.
@@ -120,4 +121,41 @@ class VelocityService(Node):
         rr = vr / self.radius
         rl = vl / self.radius
         return [rr, rl]
+    
+
+
+    def configure_robot(self, description):
+        self.get_logger().info('Got description, configuring robot')
+        # Load description
+        # From https://github.com/ros-controls/ros_controllers/blob/noetic-devel/diff_drive_controller/src/diff_drive_controller.cpp
+        robot = URDF.from_xml_string(description)
+        # Get left joint wheel
+        joint_left = self.get_joint(robot, self.left_wheel_name)
+        # Get right joint wheel
+        joint_right = self.get_joint(robot, self.right_wheel_name)
+        # Measure wheel separation
+        self.wheel_separation = self.euclidean_of_vectors(joint_left.origin.xyz, joint_right.origin.xyz)
+        # Get radius joint
+        link_left = self.get_link(robot, joint_left.child)
+        self.radius = link_left.collision.geometry.radius
+        self.get_logger().info(f"Wheel separation {self.wheel_separation} - Radius {self.radius}")
+
+    def get_joint(robot, joint_name):
+        for joint in robot.joints:
+            if joint.name == joint_name:
+                return joint
+        raise Exception(f"Joint {joint_name} not found")
+
+    def get_link(robot, link_name):
+        for link in robot.links:
+            if link.name == link_name:
+                return link
+        raise Exception(f"link {link_name} not found")
+
+    def euclidean_of_vectors(xyz1, xyz2):
+        return math.sqrt(
+            (xyz1[0] - xyz2[0]) ** 2 +
+            (xyz1[1] - xyz2[1]) ** 2 +
+            (xyz1[2] - xyz2[2]) ** 2)
+
 
